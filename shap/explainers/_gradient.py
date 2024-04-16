@@ -404,11 +404,8 @@ class _PyTorchGradient(Explainer):
             warnings.warn("Your PyTorch version is older than 0.4 and not supported.")
 
         # check if we have multiple inputs
-        self.multi_input = False
-        if isinstance(data, list):
-            self.multi_input = True
-        if not isinstance(data, list):
-            data = [data]
+        self.multi_input = True
+        data = [data]
 
         # for consistency, the method signature calls for data as the model input.
         # However, within this class, self.model_inputs is the input (i.e. the data passed by the user)
@@ -457,7 +454,7 @@ class _PyTorchGradient(Explainer):
         import torch
         self.model.zero_grad()
         X = [x.requires_grad_() for x in inputs]
-        outputs = self.model(*X)
+        outputs = self.model(X)
         selected = [val for val in outputs[:, idx]]
         if self.input_handle is not None:
             interim_inputs = self.layer.target_input
@@ -527,8 +524,10 @@ class _PyTorchGradient(Explainer):
         output_phi_vars = []
         # samples_input = input to the model
         # samples_delta = (x - x') for the input being explained - may be an interim input
-        samples_input = [torch.zeros((nsamples,) + X[t].shape[1:], device=X[t].device) for t in range(len(X))]
-        samples_delta = [np.zeros((nsamples, ) + self.data[t].shape[1:]) for t in range(len(self.data))]
+        samples_input = [torch.zeros((nsamples,) + X[l].shape[1:], device=X[l].device) for l in range(len(X))]
+        samples_delta = [np.zeros((nsamples, ) + X[l].shape[1:]) for l in range(len(X))]
+        self.data = self.data[0]
+        self.model_inputs = self.model_inputs[0]
 
         # use random seed if no argument given
         if rseed is None:
